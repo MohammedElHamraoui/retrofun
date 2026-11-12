@@ -1,0 +1,12 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml"
+  },
+  "include": ["src/**/*.py", "docs/**/*.md", "pyproject.toml", "README.md"],
+  "ignore": {
+    "useGitignore": true,
+    "customPatterns": ["uv.lock", "repomix-output.*", ".env"]
+  },
+  "security": { "enableSecurityCheck": true }
+}

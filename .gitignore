@@ -11,3 +11,6 @@ wheels/
 
 # Retrofun keep
 .env
+
+# Context for AI
+repomix-output.*

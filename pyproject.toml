@@ -1,7 +1,7 @@
 [project]
 name = "retrofun"
 version = "0.1.0"
-description = "Add your description here"
+description = "PostgreSQL + Python learning project: psycopg 3, connection pooling, pydantic-settings."
 readme = "README.md"
 authors = [
     { name = "Mohammed El Hamraoui", email = "92893757+MohammedElHamraoui@users.noreply.github.com" }
@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "psycopg[binary,pool]>=3.3.9",
+    "pydantic-settings>=2.16.2",
     "sqlalchemy>=2.1.8",
 ]
 

@@ -1,4 +1,4 @@
-# src/retrofun/db.py
+# src/retrofun/database/db.py
 """Connection smoke test: uv run python -m retrofun.db"""
 
 from psycopg_pool import ConnectionPool
@@ -17,7 +17,7 @@ def check() -> None:
     with pool.connection() as conn:
         db, user, schema = conn.execute(
             "SELECT current_database(), current_user, current_schema()"
-        ).fetchone() # type: ignore
+        ).fetchone()  # type: ignore
         print(f"database={db} user={user} schema={schema}")
 
 

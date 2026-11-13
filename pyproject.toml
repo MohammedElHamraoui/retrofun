@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "PostgreSQL + Python learning project: psycopg 3, connection pooling, pydantic-settings."
 readme = "README.md"
 authors = [
-    { name = "Mohammed El Hamraoui", email = "92893757+MohammedElHamraoui@users.noreply.github.com" }
+    { name = "Mohammed El Hamraoui", email = "92893757+MohammedElHamraoui@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
 dependencies = [
@@ -19,3 +19,25 @@ retrofun = "retrofun:main"
 [build-system]
 requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "ruff>=0.17.5",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["retrofun"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_ignores = true

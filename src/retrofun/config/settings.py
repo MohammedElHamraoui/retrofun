@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url(self) -> PostgresDsn:
         """Canonical DSN — for raw psycopg / psycopg_pool."""
@@ -34,20 +34,17 @@ class Settings(BaseSettings):
     @property
     def sqlalchemy_url(self) -> str:
         """Dialect-qualified URL — for SQLAlchemy's create_engine()."""
-        return str(self.database_url).replace(
-            "postgresql://", "postgresql+psycopg://", 1
-        )
+        return str(self.database_url).replace("postgresql://", "postgresql+psycopg://", 1)
 
 
-settings = Settings()  # type: ignore
-
+# postgres_password is populated from the environment / .env at runtime;
+# mypy's synthesized __init__ can't see pydantic-settings' sources.
+settings = Settings()  # type: ignore[call-arg]
 
 if __name__ == "__main__":
     u = settings.database_url
     h = u.hosts()[0]  # PostgresDsn is multi-host; credentials live per-host
-    print(
-        f"Database URL: {u.scheme}://{h['username']}:***@{h['host']}:{h['port']}{u.path}"
-    )
+    print(f"Database URL: {u.scheme}://{h['username']}:***@{h['host']}:{h['port']}{u.path}")
     print(
         f"SQLAlchemy URL: {u.scheme}+psycopg://{h['username']}:***@{h['host']}:{h['port']}{u.path}"
     )

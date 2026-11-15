@@ -24,7 +24,7 @@ class Base(DeclarativeBase):
 class BaseEntity(Base):
     __abstract__ = True
 
-    def to_dict(self) -> dict[str,Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Converts any inherited SQLAlchemy model instance into a clean dictionary,
         safely serializing types like UUID and datetime.

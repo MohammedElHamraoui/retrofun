@@ -5,11 +5,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # PostGreSQL settings
     postgres_user: str = "retrofun"
     postgres_password: SecretStr  # required — no default, fails fast if missing
     postgres_host: str = "127.0.0.1"  # force TCP, avoids the peer-auth trap
     postgres_port: int = Field(default=5432, ge=1, le=65535)
     postgres_db: str = "retrofundb"
+    postgres_schema: str = "retrofun"
+    version_table_schema: str = "retrofun"
 
     model_config = SettingsConfigDict(
         env_file=".env",

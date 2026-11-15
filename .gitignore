@@ -14,3 +14,7 @@ wheels/
 
 # Context for AI
 repomix-output.*
+
+
+# mermaid diag
+/*.mmd

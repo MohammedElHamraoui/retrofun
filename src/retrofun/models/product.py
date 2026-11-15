@@ -1,12 +1,12 @@
-# src/retrofun/database/models.py
+# src/retrofun/models/product.py
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from retrofun.database.base import Base
+from retrofun.models.base import RetroFunBase
 
 
-class Product(Base):
+class Product(RetroFunBase):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(primary_key=True)

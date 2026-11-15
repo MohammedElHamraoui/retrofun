@@ -1,7 +1,9 @@
 import csv
 from pathlib import Path
+from typing import Any
 
-from retrofun.database import Base, Product, SessionLocal, engine
+from retrofun.db import Base, SessionLocal, engine
+from retrofun.models import Product
 
 
 def main() -> None:
@@ -14,9 +16,9 @@ def main() -> None:
     with SessionLocal() as session, session.begin(), open(data_dir / "products.csv") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            row["year"] = int(row["year"])
-            product = Product(**row)
-            # print(product)
+            fields: dict[str, Any] = {k: (v or None) for k, v in row.items()}
+            fields["year"] = int(row["year"])
+            product = Product(**fields)
             session.add(product)
 
 

@@ -1,20 +1,12 @@
-from typing import Any
-
 from sqlalchemy import func, or_, select
 
-from retrofun.database import Product, SessionLocal
-
-
-def model_to_dict(obj: Any) -> dict[str, str | int | None]:
-    """Converts a SQLAlchemy ORM model instance into a dictionary."""
-    return {column.name: getattr(obj, column.name) for column in obj.__table__.columns}
-
+from retrofun.db import SessionLocal
+from retrofun.models import Product
 
 if __name__ == "__main__":
     c64 = Product(name="Commodore 64", manufacturer="Commodore")
     print(f"c64: {c64}")
-    c64_dict = model_to_dict(c64)
-    print(c64_dict)
+    print(c64.to_dict())
 
     with SessionLocal() as session, session.begin():
         q = select(Product).where(Product.manufacturer == "Commodore")

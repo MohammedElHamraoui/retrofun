@@ -120,7 +120,7 @@ Below you can see an example of how to read the `DATABASE_URL` variable from a P
 Listing 1 `db.py`: Display the database URL
 
 ```python
-# src/retrofun/database/db.py
+# src/retrofun/db/db.py
 import os
 from dotenv import load_dotenv
 
@@ -132,7 +132,7 @@ print("Database URL:", os.environ["DATABASE_URL"])
 Run this example to ensure that you have configured your database URL correctly:
 
 ```bash
-$ uv run python -m retrofun.database.db
+$ uv run python -m retrofun.db.db
 Database URL: postgresql+psycopg://retrofun:*****@127.0.0.1:5432/retrofundb
 ```
 > **Note** `python-doten` is a learning step that's been superseded.
@@ -253,13 +253,13 @@ For the **RetroFun Project** we use the Option 2 *Building the DSN from Individu
 
 ### Connection Pooling (`psycopg_pool`)
 
-The `pool` extra in `uv add psycopg[binary,pool]` installs `psycopg_pool`, a connection pool for Psycopg 3. Opening a PostgreSQL connection is expensive — each one requires a TCP handshake, authentication, and a dedicated backend process on the server — so a pool opens a small set of connections once and reuses them, which becomes essential as soon as concurrent clients or API endpoints hit the database. In `retrofun.database.db`, the pool is built from `settings.database_url` with `min_size=1` and `max_size=5`, and created with `open=False` so that importing the module never touches the network. Calling `pool.open(wait=True)` establishes the initial connections in background workers — retrying with exponential backoff if the server is unreachable — and raises `PoolTimeout` if they are not ready within the timeout (30 seconds by default). The `with pool.connection() as conn` block then borrows a connection and, on exit, commits or rolls back any open transaction and returns the connection to the pool for reuse instead of closing it.
+The `pool` extra in `uv add psycopg[binary,pool]` installs `psycopg_pool`, a connection pool for Psycopg 3. Opening a PostgreSQL connection is expensive — each one requires a TCP handshake, authentication, and a dedicated backend process on the server — so a pool opens a small set of connections once and reuses them, which becomes essential as soon as concurrent clients or API endpoints hit the database. In `retrofun.db.db`, the pool is built from `settings.database_url` with `min_size=1` and `max_size=5`, and created with `open=False` so that importing the module never touches the network. Calling `pool.open(wait=True)` establishes the initial connections in background workers — retrying with exponential backoff if the server is unreachable — and raises `PoolTimeout` if they are not ready within the timeout (30 seconds by default). The `with pool.connection() as conn` block then borrows a connection and, on exit, commits or rolls back any open transaction and returns the connection to the pool for reuse instead of closing it.
 
 **Listing 3** `db.py`: Pooled connection smoke test
 
 ```python
-# src/retrofun/database/db.py
-"""Connection smoke test: uv run python -m retrofun.database.db"""
+# src/retrofun/db/db.py
+"""Connection smoke test: uv run python -m retrofun.db.db"""
 
 from psycopg_pool import ConnectionPool
 
@@ -292,7 +292,7 @@ if __name__ == "__main__":
 Run this example to verify the whole chain — settings, DSN, pool, and the role's `search_path`:
 
 ```bash
-$ uv run python -m retrofun.database.db
+$ uv run python -m retrofun.db.db
 database=retrofundb user=retrofun schema=retrofun
 ```
 

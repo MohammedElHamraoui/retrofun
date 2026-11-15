@@ -58,7 +58,6 @@ clean-venv: ## Remove the virtual environment
 
 deep-clean: clean ## Nuclear clean: removes logs, context file, and lockfile
 	rm -rf logs/
-	rm -f tpp_mizan.txt
 	rm -f uv.lock
 	@echo "Deep clean complete. (Next 'make install' will re-resolve dependencies)"
 

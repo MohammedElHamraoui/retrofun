@@ -4,7 +4,7 @@ The ORM models are the **source of truth** for the database schema. PostgreSQL i
 derived artifact: `Base.metadata.create_all()` emits DDL from these classes, and
 Alembic (planned) will compare migrations against `Base.metadata`.
 
-```
+```md
 Python class → Table object → CREATE TABLE DDL → PostgreSQL
 ```
 
@@ -51,7 +51,7 @@ classDiagram
 ## Layer responsibilities
 
 | Layer | Module | Responsibility |
-|---|---|---|
+| --- | --- | --- |
 | `DeclarativeBase` | SQLAlchemy | Provides the declarative machinery |
 | `Base` | `retrofun.db.base` | Owns `MetaData`: schema + constraint naming convention |
 | `BaseEntity` | `retrofun.db.base` | Abstract. Adds `to_dict()` serialization |
@@ -65,14 +65,44 @@ Only `Product` produces a table. `BaseEntity` and `RetroFunBase` set
 
 Table `retrofun.products` · seeded from `raw_data/products.csv` (149 rows).
 
-| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
-|---|---|---|---|---|
-| `id` | `Mapped[int]` | `integer` | no | PK `pk_products`, sequence `products_id_seq` |
-| `name` | `Mapped[str]` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_products_name` |
-| `manufacturer` | `Mapped[str]` | `varchar(64)` | no | index `ix_retrofun_products_manufacturer` |
-| `year` | `Mapped[int]` | `integer` | no | index `ix_retrofun_products_year` |
-| `country` | `Mapped[str \| None]` | `varchar(32)` | yes | — |
-| `cpu` | `Mapped[str \| None]` | `varchar(32)` | yes | — |
+| Column | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- |
+| `id` | `integer` | no | PK `pk_products`, sequence `products_id_seq` |
+| `name` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_products_name` |
+| `manufacturer_id` | `integer` | no | FK → `manufacturers(id)`, index `ix_retrofun_products_manufacturer_id` |
+| `year` | `integer` | no | index `ix_retrofun_products_year` |
+| `country` | `varchar(32)` | yes | — |
+| `cpu` | `varchar(32)` | yes | — |
+
+## Manufacturer
+
+Table `retrofun.manufacturers`.
+
+| Column | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- |
+| `id` | `integer` | no | PK `pk_manufacturers`, sequence `manufacturers_id_seq` |
+| `name` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_manufacturers_name` |
+
+Manufacturer names were previously duplicated across every product row. Extracting
+them removes that redundancy and makes a rename a single-row update.
+
+## Relationships
+
+`Manufacturer` 1 ── 0..* `Product`
+
+```mermaid
+classDiagram
+    Manufacturer "1" --> "0..*" Product : products
+```
+
+- FK: `fk_products_manufacturer_id_manufacturers`
+- `ON DELETE` is **not specified** → PostgreSQL default `NO ACTION`. Deleting a
+  manufacturer that still has products raises `IntegrityError`. This is aggregation,
+  not composition: products are not owned by their manufacturer.
+- Changing this to `ON DELETE CASCADE` would make it composition and delete products
+  silently. Decide deliberately; do not let it happen by accident.
+- Manufacturer ids follow first appearance in `raw_data/products.csv`, because the
+  importer resolves each name to a row as it reads.
 
 ### Unique index, not unique constraint
 
@@ -124,11 +154,11 @@ Alembic's `alembic_version` table.
 **Constraint names.** Deterministic names keep Alembic autogenerate stable:
 
 | Key | Pattern | Example |
-|---|---|---|
+| --- | --- | --- |
 | `ix` | `ix_%(column_0_label)s` | `ix_retrofun_products_name` |
 | `uq` | `uq_%(table_name)s_%(column_0_name)s` | `uq_products_name` |
 | `ck` | `ck_%(table_name)s_%(constraint_name)s` | — |
-| `fk` | `fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s` | — |
+| `fk` | `fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s` | `fk_products_manufacturer_id_manufacturers` |
 | `pk` | `pk_%(table_name)s` | `pk_products` |
 
 ## Session semantics
@@ -161,8 +191,7 @@ SQLAlchemy does not enforce NOT NULL at construction — only at flush.
 uv run pyreverse -o mmd -p retrofun src/retrofun
 ```
 
-Writes `classes_retrofun.mmd` and `packages_retrofun.mmd`. Compare against the
-hand-maintained diagram above and keep whichever stays accurate.
+Writes `classes_retrofun.mmd` and `packages_retrofun.mmd`. Compare against the hand-maintained diagram above and keep whichever stays accurate. The generated diagram inventories project classes; the hand-written one above adds the external SQLAlchemy root and association multiplicity that pyreverse cannot infer.
 
 ```bash
 uv run python -m retrofun.import_products   # DESTRUCTIVE: drop_all + create_all + load
@@ -171,9 +200,16 @@ uv run python -m retrofun.main              # query playground
 
 ```sql
 \d+ retrofun.products
+\d+ retrofun.manufacturer
 
 SELECT conname, contype FROM pg_constraint
 WHERE conrelid = 'retrofun.products'::regclass;
+
+SELECT count(*) FROM retrofun.products;       -- expect 149
+SELECT count(*) FROM retrofun.manufacturers;
+SELECT count(*) FROM retrofun.products p
+  LEFT JOIN retrofun.manufacturers m ON m.id = p.manufacturer_id
+WHERE m.id IS NULL;                           -- expect 0 orphans
 ```
 
 The diagram is the *design*; the database is the *reality*. Compare when they might
@@ -187,5 +223,3 @@ have drifted.
   to `models/base.py` once the layer above earns responsibility.
 - **No migrations.** `import_products.py` calls `drop_all` then `create_all`, destroying
   data on every run. Alembic is the exit ramp; `version_table_schema` is already staged.
-- **No relationships yet.** When `Manufacturer` becomes its own table, document
-  multiplicity and cascade here — UML expresses what an ERD cannot.

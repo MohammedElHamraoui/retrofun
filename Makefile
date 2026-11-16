@@ -1,6 +1,6 @@
 # Define phony targets (targets that don't represent files)
 .PHONY: help sync install add add-dev remove lock format format-check typecheck \
-        build clean deep-clean ci-check rename
+        build clean deep-clean ci-check rename uml seed demo
 
 # Default target
 help: ## Show this help message
@@ -83,3 +83,12 @@ rename: ## Rename project (Usage: make rename NEW_NAME=my_app NEW_PROJECT=my-app
 	        p.write_text(p.read_text().replace("tpp_mizan", pkg).replace("tpp-mizan", prj))
 	PY
 	@echo "✅ Rename complete! Run 'make deep-clean && make install' to rebuild."
+
+uml: ## Generate UML model
+	uv run pyreverse -o mmd -p retrofun src/retrofun
+
+seed:                   ## DESTRUCTIVE: drop + create + load
+	uv run python -m retrofun.import_products
+
+demo:
+	uv run python -m retrofun.main

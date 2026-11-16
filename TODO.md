@@ -1,14 +1,9 @@
-- test suit
-- logging
-- UML model
-- [x] Find a better model-diagram tool than PyUML
-  - **Why:** hides relationships (8 hidden), names classes by file path
-    (`src.retrofun.models.product`) instead of import path, shows `Mapped[int]`
-    rather than column types.
-  - **Keep PyUML for:** quick "does my structure look silly?" checks — it's what  exposed the empty `RetroFunBase` layer.
-  - **Try:** `pyreverse -o mmd -p retrofun src/retrofun` (ships with pylint,
-    resolves inheritance properly, Mermaid output = no graphviz needed).
-  - **Fallback:** hand-written Mermaid `classDiagram` in `docs/models.md`.
-  - **Done when:** the diagram shows the full chain
-    `DeclarativeBase → Base → BaseEntity → RetroFunBase → Product`
-    and renders on GitHub.
+# RetroFun TODOS
+
+1. test suit
+2. logging
+3. UML model *Done*
+   - [x] Find a better model-diagram tool than PyUML
+     - **Chosen:** pyreverse via `make uml` — renders inheritance, uses import-path names.
+     - **Limits:** omits external bases (DeclarativeBase), no association multiplicity, shows raw `Mapped[...]` annotations, includes non-model classes (Settings).
+     - **Therefore:** generated diagram = class inventory; docs/models.md keeps the hand-written design diagram with the SQLAlchemy root and the 1 → 0..* association.

@@ -1,10 +1,8 @@
 # Models
 
-The ORM models are the **source of truth** for the database schema. PostgreSQL is a
-derived artifact: `Base.metadata.create_all()` emits DDL from these classes, and
-Alembic (planned) will compare migrations against `Base.metadata`.
+The ORM models are the **source of truth** for the database schema. PostgreSQL is a derived artifact: `Base.metadata.create_all()` emits DDL from these classes, and Alembic compares migrations against `Base.metadata`.
 
-```md
+```text
 Python class → Table object → CREATE TABLE DDL → PostgreSQL
 ```
 
@@ -29,21 +27,36 @@ classDiagram
     }
     class RetroFunBase {
         <<abstract>>
+        +int id
+        +str name
+    }
+    class Manufacturer {
+        <<entity>>
+    }
+    class Country {
+        <<entity>>
     }
     class Product {
         <<entity>>
-        +int id
-        +str name
-        +str manufacturer
+        +int manufacturer_id
         +int year
-        +str? country
         +str? cpu
+    }
+    class products_countries {
+        <<association>>
+        +int product_id
+        +int country_id
     }
 
     DeclarativeBase <|-- Base
     Base <|-- BaseEntity
     BaseEntity <|-- RetroFunBase
+    RetroFunBase <|-- Manufacturer
+    RetroFunBase <|-- Country
     RetroFunBase <|-- Product
+    Manufacturer "1" --> "0..*" Product : products
+    Product "0..*" --> "*" products_countries
+    Country "0..*" --> "*" products_countries
 ```
 
 `?` marks a nullable column. Inherited members are not repeated on subclasses.
@@ -55,101 +68,87 @@ classDiagram
 | `DeclarativeBase` | SQLAlchemy | Provides the declarative machinery |
 | `Base` | `retrofun.db.base` | Owns `MetaData`: schema + constraint naming convention |
 | `BaseEntity` | `retrofun.db.base` | Abstract. Adds `to_dict()` serialization |
-| `RetroFunBase` | `retrofun.models.base` | Abstract. Domain base — currently empty (see Open items) |
+| `RetroFunBase` | `retrofun.models.base` | Abstract. Domain base. Shared `id` + `name`, JSON `__repr__` |
+| `Manufacturer` | `retrofun.models.manufacturer` | Concrete entity → `retrofun.manufacturers` |
+| `Country` | `retrofun.models.country` | Concrete entity → `retrofun.countries` |
 | `Product` | `retrofun.models.product` | Concrete entity → `retrofun.products` |
+| `products_countries` | `retrofun.models.product_country` | Association table for Product ↔ Country M2M |
 
-Only `Product` produces a table. `BaseEntity` and `RetroFunBase` set
-`__abstract__ = True`, so SQLAlchemy skips table creation for them.
+## Entities
 
-## Product
+### Product
 
 Table `retrofun.products` · seeded from `raw_data/products.csv` (149 rows).
 
-| Column | PostgreSQL | Nullable | Index / constraint |
-| --- | --- | --- | --- |
-| `id` | `integer` | no | PK `pk_products`, sequence `products_id_seq` |
-| `name` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_products_name` |
-| `manufacturer_id` | `integer` | no | FK → `manufacturers(id)`, index `ix_retrofun_products_manufacturer_id` |
-| `year` | `integer` | no | index `ix_retrofun_products_year` |
-| `country` | `varchar(32)` | yes | — |
-| `cpu` | `varchar(32)` | yes | — |
+| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- | --- |
+| `id` | `Mapped[int]` | `integer` | no | PK `pk_products`, sequence `products_id_seq` |
+| `name` | `Mapped[str]` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_products_name` |
+| `manufacturer_id` | `Mapped[int]` | `integer` | no | FK → `manufacturers(id)`, index `ix_retrofun_products_manufacturer_id` |
+| `year` | `Mapped[int]` | `integer` | no | index `ix_retrofun_products_year` |
+| `cpu` | `Mapped[str \| None]` | `varchar(32)` | yes | — |
 
-## Manufacturer
+*Note: `country` was removed during normalization. See `products_countries` below.*
+
+### Manufacturer
 
 Table `retrofun.manufacturers`.
 
-| Column | PostgreSQL | Nullable | Index / constraint |
-| --- | --- | --- | --- |
-| `id` | `integer` | no | PK `pk_manufacturers`, sequence `manufacturers_id_seq` |
-| `name` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_manufacturers_name` |
+| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- | --- |
+| `id` | `Mapped[int]` | `integer` | no | PK `pk_manufacturers`, sequence `manufacturers_id_seq` |
+| `name` | `Mapped[str]` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_manufacturers_name` |
 
 Manufacturer names were previously duplicated across every product row. Extracting
 them removes that redundancy and makes a rename a single-row update.
 
+### Country
+
+Table `retrofun.countries`.
+
+| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- | --- |
+| `id` | `Mapped[int]` | `integer` | no | PK `pk_countries`, sequence `countries_id_seq` |
+| `name` | `Mapped[str]` | `varchar(64)` | no | **UNIQUE** index `ix_retrofun_countries_name` |
+
+Countries are extracted from the CSV's `country` column (split by `/` for joint production).
+
+### products_countries (Association Table)
+
+Table `retrofun.products_countries`. Implements the Many-to-Many relationship between `Product` and `Country`.
+
+| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- | --- |
+| `product_id` | `Mapped[int]` | `integer` | no | PK, FK → `products(id)` |
+| `country_id` | `Mapped[int]` | `integer` | no | PK, FK → `countries(id)` |
+
+Composite Primary Key: `pk_products_countries` (`product_id`, `country_id`).
+
 ## Relationships
 
-`Manufacturer` 1 ── 0..* `Product`
+### One-to-Many: Manufacturer ↔ Product
 
-```mermaid
-classDiagram
-    Manufacturer "1" --> "0..*" Product : products
-```
+`Manufacturer` 1 ── 0..* `Product`
 
 - FK: `fk_products_manufacturer_id_manufacturers`
 - `ON DELETE` is **not specified** → PostgreSQL default `NO ACTION`. Deleting a
   manufacturer that still has products raises `IntegrityError`. This is aggregation,
   not composition: products are not owned by their manufacturer.
-- Changing this to `ON DELETE CASCADE` would make it composition and delete products
-  silently. Decide deliberately; do not let it happen by accident.
-- Manufacturer ids follow first appearance in `raw_data/products.csv`, because the
-  importer resolves each name to a row as it reads.
 
-### Unique index, not unique constraint
+### Many-to-Many: Product ↔ Country
 
-`name` is declared `mapped_column(String(64), index=True, unique=True)`. Because
-`index=True` is present, `unique=True` becomes a flag on the **index** rather than a
-table-level `UniqueConstraint`. Consequences:
+`Product` *──* `Country` via `products_countries`
 
-- `psql` shows `UNIQUE, btree (name)` — not `UNIQUE CONSTRAINT, btree (name)`
-- `pg_constraint` has no `u` entry for this table
-- the `"uq"` naming convention never fires; the `"ix"` convention names it
-- `ON CONFLICT (name)` works; `ON CONFLICT ON CONSTRAINT ...` does not
-- the index cannot be `DEFERRABLE`
-
-Enforcement is identical either way — PostgreSQL implements unique constraints with
-unique indexes.
-
-## How a model becomes a table
-
-Defining `class Product(RetroFunBase)` triggers SQLAlchemy's declarative hook, which
-reads `__tablename__`, collects the `Mapped[...]` columns, builds a `Table`, and
-**registers it into `Base.metadata.tables`**.
-
-**The import is the registration.** Any script calling `create_all()` must import the
-models package, or metadata is empty and nothing gets created — silently:
-
-```python
-from retrofun.db import Base, engine
-from retrofun.models import Product  # noqa: F401 — load-bearing: registers the table
-```
-
-Verify:
-
-```bash
-uv run python -c "
-from retrofun.db import Base
-print('before:', list(Base.metadata.tables))
-from retrofun.models import Product
-print('after: ', list(Base.metadata.tables))
-"
-```
+- Implemented using `secondary=ProductCountry` in the `relationship()` definition.
+- `back_populates` is set on both sides (`Product.countries` and `Country.products`).
+- `ON DELETE` is **not specified** → default `NO ACTION`.
 
 ## Conventions
 
 **Schema.** `Base.metadata` is built with `schema=settings.postgres_schema` (default
 `retrofun`), so DDL is schema-qualified (`CREATE TABLE retrofun.products`) regardless of
-the connecting role's `search_path`. `settings.version_table_schema` is staged for
-Alembic's `alembic_version` table.
+the connecting role's `search_path`. `settings.version_table_schema` ensures Alembic's
+`alembic_version` table also lands in the `retrofun` schema.
 
 **Constraint names.** Deterministic names keep Alembic autogenerate stable:
 
@@ -177,7 +176,7 @@ Alembic's `alembic_version` table.
 strings. On a transient instance (before flush) `id` is `None`:
 
 ```python
-c64 = Product(name="Commodore 64", manufacturer="Commodore")
+c64 = Product(name="Commodore 64", manufacturer_id=1)
 c64.to_dict()  # {'id': None, 'name': 'Commodore 64', ..., 'year': None, ...}
 ```
 
@@ -191,25 +190,28 @@ SQLAlchemy does not enforce NOT NULL at construction — only at flush.
 uv run pyreverse -o mmd -p retrofun src/retrofun
 ```
 
-Writes `classes_retrofun.mmd` and `packages_retrofun.mmd`. Compare against the hand-maintained diagram above and keep whichever stays accurate. The generated diagram inventories project classes; the hand-written one above adds the external SQLAlchemy root and association multiplicity that pyreverse cannot infer.
+Writes `classes_retrofun.mmd` and `packages_retrofun.mmd`. Compare against the
+hand-maintained diagram above and keep whichever stays accurate.
 
 ```bash
-uv run python -m retrofun.import_products   # DESTRUCTIVE: drop_all + create_all + load
-uv run python -m retrofun.main              # query playground
+uv run alembic upgrade head   # Apply migrations
+uv run python -m retrofun.import_products   # Load CSV data
+uv run python -m retrofun.main              # Query playground
 ```
 
 ```sql
 \d+ retrofun.products
-\d+ retrofun.manufacturer
+\d+ retrofun.manufacturers
+\d+ retrofun.countries
+\d+ retrofun.products_countries
 
 SELECT conname, contype FROM pg_constraint
 WHERE conrelid = 'retrofun.products'::regclass;
 
 SELECT count(*) FROM retrofun.products;       -- expect 149
 SELECT count(*) FROM retrofun.manufacturers;
-SELECT count(*) FROM retrofun.products p
-  LEFT JOIN retrofun.manufacturers m ON m.id = p.manufacturer_id
-WHERE m.id IS NULL;                           -- expect 0 orphans
+SELECT count(*) FROM retrofun.countries;
+SELECT count(*) FROM retrofun.products_countries;
 ```
 
 The diagram is the *design*; the database is the *reality*. Compare when they might
@@ -217,9 +219,5 @@ have drifted.
 
 ## Open items
 
-- **`RetroFunBase` is an empty layer.** Give it a job (shared `id`, `created_at` /
-  `updated_at`) or collapse it into `BaseEntity`.
-- **`BaseEntity.to_dict()` lives in `db/`** but is a domain concern — consider moving it
+- `BaseEntity.to_dict()` lives in `db/` but is a domain concern — consider moving it
   to `models/base.py` once the layer above earns responsibility.
-- **No migrations.** `import_products.py` calls `drop_all` then `create_all`, destroying
-  data on every run. Alembic is the exit ramp; `version_table_schema` is already staged.

@@ -1,4 +1,3 @@
-import json
 from uuid import UUID
 
 from sqlalchemy import String
@@ -15,9 +14,6 @@ class RetroFunBase[IDType: (int, UUID)](BaseEntity):
     __abstract__ = True
 
     # NOTE: Do NOT define `id` here. Let the concrete models define it.
-
-    def __repr__(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False)
 
 
 class NamedRetroFunBase[IDType: (int, UUID)](RetroFunBase[IDType]):

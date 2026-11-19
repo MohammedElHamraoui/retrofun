@@ -1,4 +1,3 @@
-import json
 import uuid
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -29,6 +28,3 @@ class OrderItem(BaseEntity):
     # 4. Don't forget the relationships to navigate the object graph!
     order: Mapped["Order"] = relationship(back_populates="order_items")
     product: Mapped["Product"] = relationship(back_populates="order_items")
-
-    def __repr__(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False)

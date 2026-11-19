@@ -1,3 +1,5 @@
+# src/retrofun/db/base.py
+import json
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -25,19 +27,16 @@ class BaseEntity(Base):
     __abstract__ = True
 
     def to_dict(self) -> dict[str, Any]:
-        """
-        Converts any inherited SQLAlchemy model instance into a clean dictionary,
-        safely serializing types like UUID and datetime.
-        """
+        """Converts any inherited SQLAlchemy model instance into a clean dictionary."""
         result = {}
         for column in self.__table__.columns:
             value = getattr(self, column.name)
-
-            # Normalize common non-JSON-native types if needed
             if isinstance(value, UUID):
                 value = str(value)
             elif isinstance(value, datetime):
                 value = value.isoformat()
-
             result[column.name] = value
         return result
+
+    def __repr__(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False)

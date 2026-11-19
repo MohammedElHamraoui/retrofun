@@ -3,11 +3,24 @@
     "filePath": "repomix-output.xml",
     "style": "xml"
   },
-  "include": ["src/**/*.py", "docs/**/*.md", "pyproject.toml", "README.md", "migrations/**/*.py"],
-  
+  "include": [
+    "src/**/*.py",
+    "docs/**/*.md",
+    "pyproject.toml",
+    "README.md",
+    "migrations/**/*.py",
+    "classes_retrofun.mmd",
+    "packages_retrofun.mmd"
+  ],
   "ignore": {
     "useGitignore": true,
-    "customPatterns": ["uv.lock", "repomix-output.*", ".env"]
+    "customPatterns": [
+      "uv.lock",
+      "repomix-output.*",
+      ".env"
+    ]
   },
-  "security": { "enableSecurityCheck": true }
+  "security": {
+    "enableSecurityCheck": true
+  }
 }

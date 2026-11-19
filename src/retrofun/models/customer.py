@@ -1,0 +1,30 @@
+import uuid
+from typing import TYPE_CHECKING
+
+from sqlalchemy import String, Uuid
+from sqlalchemy.orm import Mapped, WriteOnlyMapped, mapped_column, relationship
+
+from retrofun.models.base import NamedRetroFunBase
+
+if TYPE_CHECKING:
+    from retrofun.models import Order
+
+import fastuuid7
+
+
+class Customer(NamedRetroFunBase[uuid.UUID]):
+    __tablename__ = "customers"
+
+    # Define the concrete UUID type here
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=fastuuid7.uuid7,
+    )
+
+    # ... other fields ...
+    address: Mapped[str | None] = mapped_column(String(128))
+    phone: Mapped[str | None] = mapped_column(String(32))
+
+    # orders: Mapped[list(order)]
+    orders: WriteOnlyMapped["Order"] = relationship(back_populates="customer")

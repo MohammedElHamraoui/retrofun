@@ -1,5 +1,20 @@
 # Models
 
+## Architecture Summary
+
+This document defines the domain model for the RetroFun project. It follows a **code-first SQLAlchemy 2.0** architecture where Python classes are the single source of truth, and the PostgreSQL schema is a derived artifact managed via Alembic.
+
+### Core Principles
+
+* **Layered Bases:** Infrastructure (`retrofun.db`) provides the declarative machinery, metadata configuration, and serialization (`to_dict`); Domain (`retrofun.models`) defines the business entities.
+* **Generic Identity:** The base hierarchy (`RetroFunBase`, `NamedRetroFunBase`) uses PEP 695 type parameters to support both `int` and `UUID` primary keys without boilerplate.
+* **Deterministic Schema:** All DDL is qualified to the `retrofun` schema with deterministic constraint naming (`pk_`, `fk_`, `ix_`) to ensure stable Alembic autogeneration.
+
+### Current Entities & Relationships
+
+* **`Manufacturer`** (1) ── (0..*) **`Product`**: One-to-many relationship.
+* **`Product`** (*) ── (*) **`Country`**: Many-to-many relationship via the `products_countries` association table.
+
 The ORM models are the **source of truth** for the database schema. PostgreSQL is a derived artifact: `Base.metadata.create_all()` emits DDL from these classes, and Alembic compares migrations against `Base.metadata`.
 
 ```text
@@ -130,8 +145,8 @@ Composite Primary Key: `pk_products_countries` (`product_id`, `country_id`).
 
 `Manufacturer` 1 ── 0..* `Product`
 
-- FK: `fk_products_manufacturer_id_manufacturers`
-- `ON DELETE` is **not specified** → PostgreSQL default `NO ACTION`. Deleting a
+* FK: `fk_products_manufacturer_id_manufacturers`
+* `ON DELETE` is **not specified** → PostgreSQL default `NO ACTION`. Deleting a
   manufacturer that still has products raises `IntegrityError`. This is aggregation,
   not composition: products are not owned by their manufacturer.
 
@@ -139,9 +154,9 @@ Composite Primary Key: `pk_products_countries` (`product_id`, `country_id`).
 
 `Product` *──* `Country` via `products_countries`
 
-- Implemented using `secondary=ProductCountry` in the `relationship()` definition.
-- `back_populates` is set on both sides (`Product.countries` and `Country.products`).
-- `ON DELETE` is **not specified** → default `NO ACTION`.
+* Implemented using `secondary=ProductCountry` in the `relationship()` definition.
+* `back_populates` is set on both sides (`Product.countries` and `Country.products`).
+* `ON DELETE` is **not specified** → default `NO ACTION`.
 
 ## Conventions
 
@@ -164,12 +179,12 @@ the connecting role's `search_path`. `settings.version_table_schema` ensures Ale
 
 `SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)`.
 
-- Objects stay readable **after** the session closes — no `DetachedInstanceError` when
+* Objects stay readable **after** the session closes — no `DetachedInstanceError` when
   returning them from a function or serializing to JSON.
-- No refresh `SELECT` after every commit.
-- Trade-off: columns populated by `server_default` are **not** loaded after commit; call
+* No refresh `SELECT` after every commit.
+* Trade-off: columns populated by `server_default` are **not** loaded after commit; call
   `session.refresh(obj)` when you need them.
-- Relationship lazy-loads still fail on detached instances — eager-load inside the
+* Relationship lazy-loads still fail on detached instances — eager-load inside the
   session.
 
 `BaseEntity.to_dict()` returns `dict[str, Any]`, normalizing `UUID` and `datetime` to
@@ -181,6 +196,21 @@ c64.to_dict()  # {'id': None, 'name': 'Commodore 64', ..., 'year': None, ...}
 ```
 
 SQLAlchemy does not enforce NOT NULL at construction — only at flush.
+
+## Data Type Guidance
+
+### 🔀 `default=` vs `server_default=` — not the same thing
+
+| Keyword | Where applied | Persists in migration? | Fires on ORM INSERT? | Fires on raw INSERT? |
+| --- | --- | --- | --- | --- |
+| `default=` | Python-side, SQLAlchemy ORM | ❌ No | ✅ Yes | ❌ No |
+| `server_default=` | DB-side, DDL `DEFAULT` | ✅ Yes | ✅ Yes (via DB) | ✅ Yes |
+| `onupdate=` | Python-side, SQLAlchemy ORM | ❌ No | ✅ Yes | ❌ No |
+
+If your model has `default=X` but your migration has `server_default=X`, **`alembic check` reports drift** and CI's `migrate-check` job fails. If you need both ORM-side and DB-side behavior, use both keywords — they compose.
+
+**Example: Timestamps**
+For `created_at` fields, prefer `server_default=func.now()`. This ensures the timestamp is set by the database server (avoiding clock skew) and is available even if rows are inserted via raw SQL or external tools.
 
 ## Regenerate and verify
 
@@ -219,5 +249,5 @@ have drifted.
 
 ## Open items
 
-- `BaseEntity.to_dict()` lives in `db/` but is a domain concern — consider moving it
+* `BaseEntity.to_dict()` lives in `db/` but is a domain concern — consider moving it
   to `models/base.py` once the layer above earns responsibility.

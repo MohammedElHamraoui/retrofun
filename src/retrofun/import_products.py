@@ -9,9 +9,6 @@ from retrofun.models import Country, Manufacturer, Product
 def main() -> None:
     data_dir = Path(__file__).parents[2] / "raw_data"
 
-    # Base.metadata.drop_all(engine)
-    # Base.metadata.create_all(engine)
-
     with SessionLocal() as session, session.begin(), open(data_dir / "products.csv") as f:
         reader = csv.DictReader(f)
         all_manufacturers = {}

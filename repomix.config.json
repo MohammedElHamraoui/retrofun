@@ -3,7 +3,8 @@
     "filePath": "repomix-output.xml",
     "style": "xml"
   },
-  "include": ["src/**/*.py", "docs/**/*.md", "pyproject.toml", "README.md"],
+  "include": ["src/**/*.py", "docs/**/*.md", "pyproject.toml", "README.md", "migrations/**/*.py"],
+  
   "ignore": {
     "useGitignore": true,
     "customPatterns": ["uv.lock", "repomix-output.*", ".env"]

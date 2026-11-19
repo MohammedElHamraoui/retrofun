@@ -1,6 +1,6 @@
 [project]
 name = "retrofun"
-version = "0.2.0"
+version = "0.3.0"
 description = "PostgreSQL + Python learning project: SQLAlchemy 2.0 ORM, relationships, Alembic migrations, psycopg 3, pydantic-settings."
 readme = "README.md"
 authors = [

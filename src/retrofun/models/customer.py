@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
+import fastuuid7
 from sqlalchemy import String, Uuid
 from sqlalchemy.orm import Mapped, WriteOnlyMapped, mapped_column, relationship
 
@@ -8,8 +9,6 @@ from retrofun.models.base import NamedRetroFunBase
 
 if TYPE_CHECKING:
     from retrofun.models import Order, ProductReview
-
-import fastuuid7
 
 
 class Customer(NamedRetroFunBase[uuid.UUID]):

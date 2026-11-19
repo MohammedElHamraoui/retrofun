@@ -195,10 +195,10 @@ if __name__ == "__main__":
         intersect_stmt = intersect(q_p_uk, q_p_usa)
         product_ids = session.scalars(intersect_stmt).all()
 
-        for pid in product_ids:
-            print(
-                session.get(Product, pid)
-            )  # <-- Fixed: get() expects an integer ID, not an object
+        # ✅ Fix: Single query instead of N+1 session.get() calls
+        products = session.scalars(select(Product).where(Product.id.in_(product_ids))).all()
+        for p in products:
+            print(p)
 
         print("*** Many-To-Many Product--OrderItems--Order ***")
 

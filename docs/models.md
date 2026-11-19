@@ -118,6 +118,8 @@ classDiagram
     Customer "1" --> "0..*" ProductReview : product_reviews
 ```
 
+> *Note: `RetroFunBase` does not define the `id` column in code. The generic parameter `[IDType]` serves as documentation of the intended PK type. Each concrete model explicitly declares its own `id: Mapped[IDType]`.*
+
 `?` marks a nullable column. Inherited members are not repeated on subclasses. `*--` denotes composition (OrderItem is owned by Order).
 
 ## Layer responsibilities

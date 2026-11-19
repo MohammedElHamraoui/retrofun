@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+import fastuuid7
 from sqlalchemy import DateTime, ForeignKey, Numeric, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,8 +12,6 @@ from retrofun.models.base import RetroFunBase
 
 if TYPE_CHECKING:
     from retrofun.models import Customer, OrderItem
-
-import fastuuid7
 
 
 class Order(RetroFunBase[uuid.UUID]):

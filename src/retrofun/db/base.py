@@ -36,8 +36,8 @@ class BaseEntity(Base):
                 value = str(value)
             elif isinstance(value, datetime):
                 value = value.isoformat()
-            elif isinstance(value, Decimal):  # <-- 2. Add this check
-                value = float(value)  # Convert to float for JSON compatibility
+            elif isinstance(value, Decimal):
+                value = str(value)  # ✅ Changed from float(value) to str(value)
             result[column.name] = value
         return result
 

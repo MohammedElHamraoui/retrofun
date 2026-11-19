@@ -88,7 +88,7 @@ uml: ## Generate UML model
 	uv run pyreverse -o mmd -p retrofun src/retrofun
 
 seed:                   ## DESTRUCTIVE: drop + create + load
-	uv run python -m retrofun.import_products
+	uv run python -m retrofun.import_products 
 
 demo:
 	uv run python -m retrofun.main

@@ -105,6 +105,17 @@ classDiagram
     Customer "1" --> "0..*" Order : orders
     Order "1" *-- "1..*" OrderItem : order_items
     Product "1" --> "0..*" OrderItem : order_items
+
+    class ProductReview {
+        <<entity>>
+        +int product_id
+        +UUID customer_id
+        +datetime created_at
+        +int rating
+        +str? comment
+    }
+    Product "1" --> "0..*" ProductReview : reviews
+    Customer "1" --> "0..*" ProductReview : product_reviews
 ```
 
 `?` marks a nullable column. Inherited members are not repeated on subclasses. `*--` denotes composition (OrderItem is owned by Order).
@@ -125,6 +136,7 @@ classDiagram
 | `Order` | `retrofun.models.order` | Concrete entity → `retrofun.orders` (UUID PK) |
 | `OrderItem` | `retrofun.models.orderitem` | Concrete entity → `retrofun.order_items` (composite PK, no `id`) |
 | `products_countries` | `retrofun.models.product_country` | Association table for Product ↔ Country M2M |
+| `ProductReview` | `retrofun.models.product_review` | Concrete entity → `retrofun.product_reviews` (composite PK, inherits `BaseEntity`) |
 
 ## Entities
 
@@ -214,6 +226,19 @@ Table `retrofun.products_countries`. Implements the Many-to-Many relationship be
 
 Composite Primary Key: `pk_products_countries` (`product_id`, `country_id`).
 
+### ProductReview
+
+Table `retrofun.product_reviews`. Composite PK `(product_id, customer_id)` — a
+customer reviews a product **at most once**. Inherits `BaseEntity` (no surrogate `id`).
+
+| Column | Python annotation | PostgreSQL | Nullable | Index / constraint |
+| --- | --- | --- | --- | --- |
+| `product_id` | `Mapped[int]` | `integer` | no | PK, FK → `products(id)` |
+| `customer_id` | `Mapped[uuid.UUID]` | `uuid` | no | PK, FK → `customers(id)` |
+| `created_at` | `Mapped[datetime]` | `timestamptz` | no | index, `server_default=now()` |
+| `rating` | `Mapped[int]` | `integer` | no | `ck_product_reviews_rating_range` (1–5) |
+| `comment` | `Mapped[str \| None]` | `text` | yes | — |
+
 ## Relationships
 
 ### One-to-Many: Manufacturer ↔ Product
@@ -264,7 +289,7 @@ Composite Primary Key: `pk_products_countries` (`product_id`, `country_id`).
 | --- | --- | --- |
 | `ix` | `ix_%(column_0_label)s` | `ix_retrofun_products_name` |
 | `uq` | `uq_%(table_name)s_%(column_0_name)s` | `uq_products_name` |
-| `ck` | `ck_%(table_name)s_%(constraint_name)s` | — |
+| `ck` | `ck_%(table_name)s_%(constraint_name)s` | `ck_product_reviews_rating_range` |
 | `fk` | `fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s` | `fk_products_manufacturer_id_manufacturers` |
 | `pk` | `pk_%(table_name)s` | `pk_products` |
 
@@ -328,6 +353,7 @@ uv run python -m retrofun.main              # Query playground
 \d+ retrofun.customers
 \d+ retrofun.orders
 \d+ retrofun.order_items
+\d+ retrofun.product_reviews
 
 SELECT conname, contype FROM pg_constraint
 WHERE conrelid = 'retrofun.products'::regclass;
@@ -339,10 +365,13 @@ SELECT count(*) FROM retrofun.products_countries;
 SELECT count(*) FROM retrofun.customers;
 SELECT count(*) FROM retrofun.orders;
 SELECT count(*) FROM retrofun.order_items;
+SELECT count(*) FROM retrofun.product_reviews;
+SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint
+WHERE conrelid = 'retrofun.product_reviews'::regclass AND contype = 'c';
 ```
 
 The diagram is the *design*; the database is the *reality*. Compare when they might have drifted.
 
 ## Open items
 
-- Consider `ON DELETE CASCADE` for `Order → OrderItem` if OrderItems should be deleted when their Order is deleted (currently `NO ACTION`).
+- Consider `ON DELETE CASCADE` for `Order → OrderItem` if OrderItems should be deleted when their Order is deleted (currently `NO ACTION`). *Resolved: Order → OrderItem uses cascade='all, delete-orphan' to enforce strict composition*

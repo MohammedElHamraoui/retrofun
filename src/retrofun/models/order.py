@@ -28,17 +28,20 @@ class Order(RetroFunBase[uuid.UUID]):
     # An order doesn't have a name, but it has other specific attributes
     # Let the database handle the time.
     # PostgreSQL's RETURNING clause will fetch it back to Python automatically.
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         index=True,
     )
-    custumer_id: Mapped[uuid.UUID] = mapped_column(
+    customer_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("customers.id"),
         index=True,
     )
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
     customer: Mapped["Customer"] = relationship(back_populates="orders")
-    order_items: Mapped[list["OrderItem"]] = relationship(back_populates="order")
+    order_items: Mapped[list["OrderItem"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",
+        passive_deletes=True,  # ← Lets the DB do the heavy lifting, but keeps ORM aware
+    )

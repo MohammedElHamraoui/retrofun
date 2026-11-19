@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, WriteOnlyMapped, mapped_column, relationship
 from retrofun.models.base import NamedRetroFunBase
 
 if TYPE_CHECKING:
-    from retrofun.models import Order
+    from retrofun.models import Order, ProductReview
 
 import fastuuid7
 
@@ -28,3 +28,5 @@ class Customer(NamedRetroFunBase[uuid.UUID]):
 
     # orders: Mapped[list(order)]
     orders: WriteOnlyMapped["Order"] = relationship(back_populates="customer")
+
+    product_reviews: WriteOnlyMapped["ProductReview"] = relationship(back_populates="customer")

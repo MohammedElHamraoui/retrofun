@@ -9,7 +9,7 @@ from retrofun.models.base import NamedRetroFunBase
 from retrofun.models.product_country import ProductCountry
 
 if TYPE_CHECKING:
-    from retrofun.models import Country, Manufacturer, OrderItem
+    from retrofun.models import Country, Manufacturer, OrderItem, ProductReview
 
 
 class Product(NamedRetroFunBase[int]):
@@ -28,3 +28,5 @@ class Product(NamedRetroFunBase[int]):
     )
 
     order_items: WriteOnlyMapped["OrderItem"] = relationship(back_populates="product")
+
+    reviews: WriteOnlyMapped["ProductReview"] = relationship(back_populates="product")

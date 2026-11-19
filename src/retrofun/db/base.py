@@ -1,6 +1,7 @@
 # src/retrofun/db/base.py
 import json
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -35,6 +36,8 @@ class BaseEntity(Base):
                 value = str(value)
             elif isinstance(value, datetime):
                 value = value.isoformat()
+            elif isinstance(value, Decimal):  # <-- 2. Add this check
+                value = float(value)  # Convert to float for JSON compatibility
             result[column.name] = value
         return result
 

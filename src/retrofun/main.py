@@ -2,6 +2,9 @@ from sqlalchemy import func, intersect, select
 
 from retrofun.db import SessionLocal
 from retrofun.models import Country, Manufacturer, Product
+from retrofun.models.customer import Customer
+from retrofun.models.order import Order
+from retrofun.models.order_item import OrderItem
 
 if __name__ == "__main__":
     print("*** One-To-Many ***")
@@ -196,3 +199,23 @@ if __name__ == "__main__":
             print(
                 session.get(Product, pid)
             )  # <-- Fixed: get() expects an integer ID, not an object
+
+        print("*** Many-To-Many Product--OrderItems--Order ***")
+
+        c = session.scalar(select(Customer).where(Customer.name == "John Butler"))
+        print(c)
+        assert c is not None
+        print(c.orders)
+        orders = session.scalars(c.orders.select()).all()
+        print(orders)
+        print(session.scalar(select(func.count(Customer.id))))
+        print(session.scalar(select(func.count(Order.id))))
+
+        item_total = (OrderItem.unit_price * OrderItem.quantity).label("item_total")
+        q = (
+            select(item_total, Product)
+            .join(Product.order_items)
+            .order_by(item_total.desc())
+            .limit(3)
+        )
+        print(session.execute(q).all())

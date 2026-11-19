@@ -5,7 +5,7 @@ import fastuuid7
 from sqlalchemy import String, Uuid
 from sqlalchemy.orm import Mapped, WriteOnlyMapped, mapped_column, relationship
 
-from retrofun.models.base import NamedRetroFunBase
+from retrofun.models import NamedRetroFunBase
 
 if TYPE_CHECKING:
     from retrofun.models import Order, ProductReview

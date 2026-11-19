@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from retrofun.db.base import BaseEntity
+from retrofun.db import BaseEntity
 
 if TYPE_CHECKING:
     from retrofun.models import Customer, Product

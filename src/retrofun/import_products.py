@@ -2,6 +2,8 @@ import csv
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import inspect
+
 from retrofun.db import SessionLocal
 from retrofun.models import Country, Manufacturer, Product
 
@@ -11,15 +13,22 @@ def main() -> None:
 
     with SessionLocal() as session, session.begin(), open(data_dir / "products.csv") as f:
         reader = csv.DictReader(f)
-        all_manufacturers = {}
-        all_countries = {}
+        all_manufacturers: dict[str, Manufacturer] = {}
+        all_countries: dict[str, Country] = {}
 
         for row in reader:
             fields: dict[str, Any] = {k: (v or None) for k, v in row.items()}
             fields["year"] = int(row["year"])
-
             manufacturer = fields.pop("manufacturer")
-            countries = fields.pop("country").split("/")
+
+            # Safely handle empty country fields
+            country_field = fields.pop("country", "") or ""
+            countries = [c.strip() for c in country_field.split("/") if c.strip()]
+
+            # Drop any extra CSV columns that aren't in the Product model
+            valid_cols = {c.key for c in inspect(Product).mapper.column_attrs}
+            fields = {k: v for k, v in fields.items() if k in valid_cols}
+
             product = Product(**fields)
 
             if manufacturer not in all_manufacturers:

@@ -29,7 +29,7 @@ class BaseEntity(Base):
 
     def to_dict(self) -> dict[str, Any]:
         """Converts any inherited SQLAlchemy model instance into a clean dictionary."""
-        result = {}
+        result: dict[str, Any] = {}
         for column in self.__table__.columns:
             value = getattr(self, column.name)
             if isinstance(value, UUID):

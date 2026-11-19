@@ -1,5 +1,5 @@
 # src/retrofun/db/db.py
-"""Connection smoke test: uv run python -m retrofun.db"""
+"""Connection smoke test: uv run python -m retrofun.db.db"""
 
 from psycopg_pool import ConnectionPool
 

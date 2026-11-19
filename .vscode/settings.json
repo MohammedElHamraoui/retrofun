@@ -1,9 +1,22 @@
 {
     "cSpell.words": [
+        "asyncpg",
+        "conname",
+        "conninfo",
+        "conrelid",
+        "constraintdef",
+        "contype",
+        "doten",
         "fastuuid",
+        "fetchone",
         "notin",
+        "onupdate",
         "orderitem",
+        "PGPASSWORD",
         "productreview",
-        "retrofun"
+        "psycopg",
+        "regclass",
+        "retrofun",
+        "retrofundb"
     ]
 }

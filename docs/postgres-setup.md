@@ -3,6 +3,7 @@
 This document outlines the foundational steps to set up an isolated PostgreSQL environment for the `retrofun` project.
 
 ## Prerequisites
+
 - PostgreSQL installed and running.
 - `psql` CLI tool available in your PATH.
 - Superuser access (usually the `postgres` OS user).
@@ -53,7 +54,8 @@ DROP TABLE
 ```
 
 ### Why did this work?
-Even though we didn't specify `retrofun.my_table`, the table was successfully created inside the `retrofun` schema. This happens because PostgreSQL's default `search_path` is set to `"$user", public`. 
+
+Even though we didn't specify `retrofun.my_table`, the table was successfully created inside the `retrofun` schema. This happens because PostgreSQL's default `search_path` is set to `"$user", public`.
 
 Because our current user is `retrofun`, the `"$user"` variable dynamically resolves to the `retrofun` schema. PostgreSQL looks there first, finds it, and creates the table inside it. The `AUTHORIZATION` clause we used earlier simply ensured that `retrofun` has full ownership and DDL privileges over that schema.
 
@@ -62,14 +64,17 @@ Because our current user is `retrofun`, the `"$user"` variable dynamically resol
 ## 💡 CLI Pro-Tips & Python Integration
 
 ### Bypassing Password Prompts in Scripts
+
 If you ever need to automate the connection via bash (e.g., in a deployment script), use the `PGPASSWORD` environment variable rather than plain text in the SQL:
 
 ```bash
 PGPASSWORD='*****' psql -U retrofun -d retrofundb -h 127.0.0.1 -c "SELECT current_schema();"
 ```
+
 *(Note: Using `-h 127.0.0.1` forces a TCP connection, which bypasses the `peer` OS-user authentication check and uses password auth instead).*
 
 ### Permanent Search Path
+
 If you want to guarantee that `retrofun` never accidentally creates objects in the `public` schema, you can lock their `search_path` permanently at the role level:
 
 ```sql
@@ -77,20 +82,23 @@ ALTER ROLE retrofun IN DATABASE retrofundb SET search_path = retrofun;
 ```
 
 ## Connecting from Python (`uv` / `pyproject.toml`)
-Since this is a Python project, you will likely connect using `psycopg` and `SQLAlchemy`. **Never hardcode the database password in your Python code.** 
+
+Since this is a Python project, you will likely connect using `psycopg` and `SQLAlchemy`. **Never hardcode the database password in your Python code.**
 
 A driver that is extremely popular and has proven to be very stable is `psycopg`, which you can install with this command:
 
 ```bash
 uv add psycopg[binary,pool]
 ```
+
 To connect to your database from Python you will later need to know the connection details:
-   - **`Hostname`**: localhost (127.0.0.1)
-   - **`Port`**: 5432
-   - **`Database`**: retrofundb
-   - **`Username`**: retrofun
-   - **`Password`**: *****
-   - **`Python driver`**: psycopg
+
+- **`Hostname`**: localhost (127.0.0.1)
+- **`Port`**: 5432
+- **`Database`**: retrofundb
+- **`Username`**: retrofun
+- **`Password`**: *****
+- **`Python driver`**: psycopg
 
 When using SQLAlchemy, a database to connect to is represented by a URL that has the following structure:
 
@@ -112,7 +120,7 @@ You can then load this in your Python app using `python-dotenv` or `pydantic-set
 The `python-dotenv` package allows an application to read variables from a `.env` file. Install it with `uv`:
 
 ```bash
-$ uv add python-dotenv
+uv add python-dotenv
 ```
 
 Below you can see an example of how to read the `DATABASE_URL` variable from a Python program. Copy this code to a file named `db.py` in the project directory to try it out on your computer.
@@ -129,15 +137,19 @@ load_dotenv()
 print("Database URL:", os.environ["DATABASE_URL"])
 ```
 
+> **Note:** The RetroFun `Settings` class uses the individual `POSTGRES_*` variables, not `DATABASE_URL`. If you paste `DATABASE_URL` into your `.env`, it will be silently ignored by Pydantic.
+
 Run this example to ensure that you have configured your database URL correctly:
 
 ```bash
 $ uv run python -m retrofun.db.db
 Database URL: postgresql+psycopg://retrofun:*****@127.0.0.1:5432/retrofundb
 ```
+
 > **Note** `python-doten` is a learning step that's been superseded.
-> 
+>
 ### Pydantic Settings
+
 To manage PostgreSQL configuration in Python using pydantic-settings, use `BaseSettings` paired with Pydantic's built-in `PostgresDsn` type. This automatically validates connection strings, parses individual URL components, and loads credentials safely from environment variables or a `.env` file.
 
 #### 1. Direct DSN Configuration (Recommended for hosted platforms that inject a single URL)
@@ -169,6 +181,7 @@ settings = Settings()
 db_url_str = str(settings.database_url)
 print("Database URL:", db_url_str)
 ```
+
 Run this example to ensure that you have configured your database URL correctly:
 
 ```bash
@@ -179,7 +192,7 @@ Database URL: postgresql+psycopg://retrofun:*****@127.0.0.1:5432/retrofundb
 • **Automatic validation.** Pydantic raises a ValidationError at startup if the host is missing or the URL scheme is invalid.
 • **Parsed attributes.** `PostgresDsn` is a multi-host URL type. Access `.scheme` and `.path` directly; access credentials via `settings.database_url.hosts()` — a list of dicts with `username`, `password`, `host`, `port`. Use `hosts()[0]` for a single-host DSN.
 
-#### 2. Building the DSN from Individual Variables.
+#### 2. Building the DSN from Individual Variables
 
 If your deployment provides separate environment variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.) instead of a single URL, use a `@computed_field` with `PostgresDsn.build` to assemble them cleanly.
 

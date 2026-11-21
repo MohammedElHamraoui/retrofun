@@ -42,4 +42,10 @@ class BaseEntity(Base):
         return result
 
     def __repr__(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False)
+        # return json.dumps(self.to_dict(), ensure_ascii=False)
+        # Concise representation for console output
+        class_name = self.__class__.__name__
+        # Get the first 2-3 identifying columns (e.g., id, name)
+        identifiers = [c.name for c in self.__table__.columns if c.primary_key or c.name == "name"]
+        attrs = ", ".join(f"{k}={getattr(self, k)!r}" for k in identifiers if hasattr(self, k))
+        return f"<{class_name}({attrs})>"

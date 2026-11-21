@@ -1,10 +1,13 @@
-from sqlalchemy import func, intersect, select
+from datetime import date, datetime
+
+from sqlalchemy import func, intersect, select, text
 
 from retrofun.db import SessionLocal
 from retrofun.models import Country, Manufacturer, Product
 from retrofun.models.customer import Customer
 from retrofun.models.order import Order
 from retrofun.models.order_item import OrderItem
+from retrofun.models.product_review import ProductReview
 
 if __name__ == "__main__":
     print("*** One-To-Many ***")
@@ -199,23 +202,181 @@ if __name__ == "__main__":
         products = session.scalars(select(Product).where(Product.id.in_(product_ids))).all()
         for p in products:
             print(p)
+        print("")
 
         print("*** Many-To-Many Product--OrderItems--Order ***")
 
-        c = session.scalar(select(Customer).where(Customer.name == "John Butler"))
-        print(c)
-        assert c is not None
-        print(c.orders)
-        orders = session.scalars(c.orders.select()).all()
-        print(orders)
-        print(session.scalar(select(func.count(Customer.id))))
-        print(session.scalar(select(func.count(Order.id))))
-
-        item_total = (OrderItem.unit_price * OrderItem.quantity).label("item_total")
-        q = (
-            select(item_total, Product)
-            .join(Product.order_items)
-            .order_by(item_total.desc())
-            .limit(3)
+        print(
+            "21. Orders above $300 in descending ordered by the sale amount from highest to lowest."
         )
-        print(session.execute(q).all())
+        orders_above_300 = session.scalars(
+            select(Order).where(Order.total_amount > 300).order_by(Order.total_amount.desc())
+        )
+        for order_above_300 in orders_above_300:
+            print(order_above_300)
+        print("")
+
+        print("22. Orders that include one or more ZX81 computers.")
+        orders_zx81 = session.scalars(
+            select(Order)
+            .join(Order.order_items)
+            .join(OrderItem.product)
+            .where(Product.name.like("%ZX81%"))
+        )
+        for order_zx81 in orders_zx81:
+            print(order_zx81)
+        print("")
+
+        print("23. Orders that include a product made by Amstrad.")
+        orders_amstrad = session.scalars(
+            select(Order)
+            .join(Order.order_items)
+            .join(OrderItem.product)
+            .join(Product.manufacturer)
+            .where(Manufacturer.name == "Amstrad")
+            .distinct()
+        )
+        for order_amstrad in orders_amstrad:
+            print(order_amstrad)
+        print("")
+
+        print("24. Orders made on the 25th of December 2022 with two or more line items.")
+        orders_new_eve = session.scalars(
+            select(Order)
+            .join(Order.order_items)
+            .where(func.date(Order.created_at) == date(2022, 12, 25))
+            .group_by(Order.id)
+            .having(func.count(OrderItem.order_id) > 1)
+        )
+        for order_new_eve in orders_new_eve:
+            print(order_new_eve)
+        print("")
+
+        print(
+            "25. Customers with their first and last order date and time. "
+            "Hint: the min() and max() functions can help with this query."
+        )
+        customers_min_max = session.execute(
+            select(Customer, func.min(Order.created_at), func.max(Order.created_at))
+            .join(Customer.orders)
+            .group_by(Customer.id)
+        )
+        for customer_min_max in customers_min_max:
+            print(customer_min_max)
+        print("")
+
+        print(
+            "26. The top 5 manufacturers that had the most sale amounts, "
+            "sorted by those amounts in descending order."
+        )
+        most_sale_makers = session.execute(
+            select(
+                Manufacturer.name,
+                func.sum(OrderItem.unit_price * OrderItem.quantity).label("total_sales"),
+            )
+            .join(Manufacturer.products)
+            .join(Product.order_items)
+            .join(OrderItem.order)
+            .group_by(Manufacturer.id)
+            .order_by(text("total_sales DESC"))
+            .limit(5)
+        )
+        for most_sale_maker in most_sale_makers:
+            print(most_sale_maker)
+        print("")
+
+        print(
+            "27. Products, their average star rating and their review count, "
+            "sorted by review count in descending order"
+        )
+        product_rating = func.avg(ProductReview.rating).label("product_rating")
+        products_rating_review = session.execute(
+            select(Product, product_rating, func.count(ProductReview.rating))
+            .join(Product.reviews)
+            .group_by(Product.id)
+            .order_by(product_rating)
+        )
+        for product_rating_review in products_rating_review:
+            print(product_rating_review)
+        print("")
+
+        print(
+            "28. Products and their average star rating, but only counting reviews "
+            "that include a written comment."
+        )
+        q28 = (
+            select(Product, func.avg(ProductReview.rating).label("product_rating"))
+            .join(Product.reviews)
+            .where(ProductReview.comment.is_not(None))
+            .group_by(Product.id)
+        )
+        for r_28 in session.execute(q28):
+            print(r_28)
+        print("")
+
+        print("29. Average star rating for the Commodore 64 computer in each month of 2022.")
+        month_sell = func.extract("month", ProductReview.created_at).label("month_sell")
+        q_29 = (
+            select(Product, func.avg(ProductReview.rating), month_sell)
+            .join(Product.reviews)
+            .where(
+                Product.name.ilike("%Commodore 64%"),
+                ProductReview.created_at.between(datetime(2022, 1, 1), datetime(2022, 12, 31)),
+            )
+            .group_by(Product.id, month_sell)
+            .order_by(month_sell)
+        )
+        for r_29 in session.execute(q_29):
+            print(r_29)
+        print("")
+
+        print(
+            "30. Customers with the minimum and maximum star rating they gave to a product, "
+            "sorted alphabetically by customer name."
+        )
+        q_30 = (
+            select(
+                Customer,
+                Product,
+                func.min(ProductReview.rating).label("min_rating"),
+                func.max(ProductReview.rating).label("max_rating"),
+            )
+            .join(Customer.product_reviews)
+            .join(ProductReview.product)
+            .group_by(Customer.id, Product.id)
+            .order_by(Customer.name)
+        )
+        for r_30 in session.execute(q_30):
+            print(r_30)
+        print("")
+
+        print(
+            "31. Manufacturers with their average star rating, "
+            "sorted from highest to lowest rating."
+        )
+        avg_rating = func.avg(ProductReview.rating).label("avg_rating")
+        q_31 = (
+            select(Manufacturer, avg_rating)
+            .join(Manufacturer.products)
+            .join(Product.reviews)
+            .group_by(Manufacturer.id)
+            .order_by(avg_rating.desc())
+        )
+        for r_31 in session.execute(q_31):
+            print(r_31)
+        print("")
+
+        print(
+            "32. Product countries with their average star rating, "
+            "sorted from highest to lowest rating."
+        )
+        avg_rating = func.avg(ProductReview.rating).label("avg_rating")
+        q_32 = (
+            select(Country, avg_rating)
+            .join(Country.products)
+            .join(Product.reviews)
+            .group_by(Country.id)
+            .order_by(avg_rating.desc())
+        )
+        for r_32 in session.execute(q_32):
+            print(r_32)

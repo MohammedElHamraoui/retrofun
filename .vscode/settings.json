@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "Amstrad",
         "asyncpg",
         "conname",
         "conninfo",
@@ -9,6 +10,7 @@
         "doten",
         "fastuuid",
         "fetchone",
+        "ilike",
         "notin",
         "onupdate",
         "orderitem",

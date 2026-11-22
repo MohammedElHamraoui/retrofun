@@ -10,6 +10,7 @@
         "doten",
         "fastuuid",
         "fetchone",
+        "httpx",
         "ilike",
         "Negotiables",
         "notin",

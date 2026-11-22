@@ -72,7 +72,7 @@ rename: ## Rename project (Usage: make rename NEW_NAME=my_app NEW_PROJECT=my-app
 	import pathlib, re, sys
 	pkg, prj = sys.argv[1], sys.argv[2]
 	assert re.fullmatch(r"[a-z_][a-z0-9_]*", pkg), "NEW_NAME must be a valid Python identifier"
-	for old, new in [("src/tpp_mizan", f"src/{pkg}"), ("tests/tpp_mizan", f"tests/{pkg}")]:
+	for old, new in [("src/retrofun", f"src/{pkg}"), ("tests/retrofun", f"tests/{pkg}")]:
 	    if pathlib.Path(old).exists():
 	        pathlib.Path(old).rename(new)
 	# Added '.gitignore' to ensure the context file exclusion is also renamed
@@ -80,15 +80,20 @@ rename: ## Rename project (Usage: make rename NEW_NAME=my_app NEW_PROJECT=my-app
 	    for p in pathlib.Path(".").rglob(ext):
 	        if any(x in p.parts for x in (".venv", ".git", "logs", ".pytest_cache", ".mypy_cache", ".ruff_cache")):
 	            continue
-	        p.write_text(p.read_text().replace("tpp_mizan", pkg).replace("tpp-mizan", prj))
+	        p.write_text(p.read_text().replace("retrofun", pkg).replace("tpp-mizan", prj))
 	PY
 	@echo "✅ Rename complete! Run 'make deep-clean && make install' to rebuild."
 
 uml: ## Generate UML model
 	uv run pyreverse -o mmd -p retrofun src/retrofun
 
-seed:                   ## DESTRUCTIVE: drop + create + load
-	uv run python -m retrofun.import_products 
+# Makefile
+seed:
+	uv run python -m retrofun.seeders.import_products
+	uv run python -m retrofun.seeders.import_orders
+	uv run python -m retrofun.seeders.import_reviews
+	uv run python -m retrofun.seeders.import_articles
+	uv run python -m retrofun.seeders.import_views
 
 demo:
 	uv run python -m retrofun.main

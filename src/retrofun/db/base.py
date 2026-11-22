@@ -1,5 +1,4 @@
 # src/retrofun/db/base.py
-import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any

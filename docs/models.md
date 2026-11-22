@@ -342,9 +342,11 @@ uv run pyreverse -o mmd -p retrofun src/retrofun
 Writes `classes_retrofun.mmd` and `packages_retrofun.mmd`. Compare against the hand-maintained diagram above and keep whichever stays accurate.
 
 ```bash
-uv run alembic upgrade head   # Apply migrations
-uv run python -m retrofun.import_products   # Load CSV data
-uv run python -m retrofun.main              # Query playground
+uv run alembic upgrade head
+uv run python -m retrofun.import_products
+uv run python -m retrofun.import_orders
+uv run python -m retrofun.import_reviews
+uv run python -m retrofun.main
 ```
 
 ```sql
@@ -377,3 +379,4 @@ The diagram is the *design*; the database is the *reality*. Compare when they mi
 ## Open items
 
 - Consider `ON DELETE CASCADE` for `Order → OrderItem` if OrderItems should be deleted when their Order is deleted (currently `NO ACTION`). *Resolved: Order → OrderItem uses cascade='all, delete-orphan' to enforce strict composition*
+    >Resolved: `Order → OrderItem` uses `cascade='all, delete-orphan'` to enforce strict composition at the ORM level.

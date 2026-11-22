@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import UTC, datetime
 
-from sqlalchemy import func, intersect, select, text
+from sqlalchemy import func, intersect, select
 
 from retrofun.db import SessionLocal
 from retrofun.models import Country, Manufacturer, Product
@@ -9,7 +9,8 @@ from retrofun.models.order import Order
 from retrofun.models.order_item import OrderItem
 from retrofun.models.product_review import ProductReview
 
-if __name__ == "__main__":
+
+def main() -> None:
     print("*** One-To-Many ***")
 
     # ONE single session for all queries
@@ -244,7 +245,10 @@ if __name__ == "__main__":
         orders_new_eve = session.scalars(
             select(Order)
             .join(Order.order_items)
-            .where(func.date(Order.created_at) == date(2022, 12, 25))
+            .where(
+                Order.created_at >= datetime(2022, 12, 25, tzinfo=UTC),
+                Order.created_at < datetime(2022, 12, 26, tzinfo=UTC),
+            )
             .group_by(Order.id)
             .having(func.count(OrderItem.order_id) > 1)
         )
@@ -269,16 +273,14 @@ if __name__ == "__main__":
             "26. The top 5 manufacturers that had the most sale amounts, "
             "sorted by those amounts in descending order."
         )
+        total_sales = func.sum(OrderItem.unit_price * OrderItem.quantity).label("total_sales")
         most_sale_makers = session.execute(
-            select(
-                Manufacturer.name,
-                func.sum(OrderItem.unit_price * OrderItem.quantity).label("total_sales"),
-            )
+            select(Manufacturer.name, total_sales)
             .join(Manufacturer.products)
             .join(Product.order_items)
             .join(OrderItem.order)
             .group_by(Manufacturer.id)
-            .order_by(text("total_sales DESC"))
+            .order_by(total_sales)
             .limit(5)
         )
         for most_sale_maker in most_sale_makers:
@@ -286,18 +288,18 @@ if __name__ == "__main__":
         print("")
 
         print(
-            "27. Products, their average star rating and their review count, "
-            "sorted by review count in descending order"
+            "27. Products, their average star rating and review count, sorted by review count DESC."
         )
         product_rating = func.avg(ProductReview.rating).label("product_rating")
-        products_rating_review = session.execute(
-            select(Product, product_rating, func.count(ProductReview.rating))
+        review_count = func.count(ProductReview.rating).label("review_count")
+        q27 = (
+            select(Product, product_rating, review_count)
             .join(Product.reviews)
             .group_by(Product.id)
-            .order_by(product_rating)
+            .order_by(review_count.desc())
         )
-        for product_rating_review in products_rating_review:
-            print(product_rating_review)
+        for row in session.execute(q27):
+            print(f"{row.Product.name}: Avg {row.product_rating:.2f} ({row.review_count} reviews)")
         print("")
 
         print(
@@ -330,24 +332,19 @@ if __name__ == "__main__":
             print(r_29)
         print("")
 
-        print(
-            "30. Customers with the minimum and maximum star rating they gave to a product, "
-            "sorted alphabetically by customer name."
-        )
-        q_30 = (
+        print("30. Customers with the minimum and maximum star rating they gave to any product.")
+        q30 = (
             select(
                 Customer,
-                Product,
                 func.min(ProductReview.rating).label("min_rating"),
                 func.max(ProductReview.rating).label("max_rating"),
             )
             .join(Customer.product_reviews)
-            .join(ProductReview.product)
-            .group_by(Customer.id, Product.id)
+            .group_by(Customer.id)
             .order_by(Customer.name)
         )
-        for r_30 in session.execute(q_30):
-            print(r_30)
+        for r30 in session.execute(q30):
+            print(f"{r30.Customer.name}: Min {r30.min_rating}, Max {r30.max_rating}")
         print("")
 
         print(
@@ -380,3 +377,7 @@ if __name__ == "__main__":
         )
         for r_32 in session.execute(q_32):
             print(r_32)
+
+
+if __name__ == "__main__":
+    main()

@@ -28,12 +28,13 @@ def include_object(
 ) -> bool:
     """
     Filter objects during autogenerate.
-    - Ignore foreign_key_constraint diffs (schema-qualification noise).
     - Ignore the alembic_version table (PostgreSQL reflection schema mismatch noise).
+    - Ignore spurious FK drops caused by schema-qualification artifacts,
+      but allow legitimate FK changes (like ondelete=) to be detected.
     """
-    return not (
-        type_ == "foreign_key_constraint" or (type_ == "table" and name == "alembic_version")
-    )
+    if type_ == "table" and name == "alembic_version":
+        return False
+    return not (type_ == "foreign_key_constraint" and reflected and compare_to is None)
 
 
 def run_migrations_offline() -> None:

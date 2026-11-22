@@ -1,4 +1,9 @@
-"""fix missing customer_id column on orders
+"""fix missing customer_id column on orders(MISNAMED)
+
+NOTE: This migration does NOT add/rename customer_id. It only re-creates
+foreign keys with referent_schema="retrofun" to fix schema-qualification.
+The actual custumer_id -> customer_id rename occurs in the next migration
+(e5c13c802ffd).
 
 Revision ID: b0850d9ec9a1
 Revises: 08aafd83ac36

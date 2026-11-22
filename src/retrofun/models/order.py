@@ -42,5 +42,4 @@ class Order(RetroFunBase[uuid.UUID]):
     order_items: Mapped[list["OrderItem"]] = relationship(
         back_populates="order",
         cascade="all, delete-orphan",
-        passive_deletes=True,  # ← Lets the DB do the heavy lifting, but keeps ORM aware
     )

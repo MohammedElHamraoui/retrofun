@@ -11,7 +11,9 @@
         "fastuuid",
         "fetchone",
         "ilike",
+        "Negotiables",
         "notin",
+        "numpy",
         "ondelete",
         "onupdate",
         "orderitem",
@@ -21,6 +23,9 @@
         "psycopg",
         "regclass",
         "retrofun",
-        "retrofundb"
+        "retrofundb",
+        "taskiq",
+        "threadpool",
+        "venv"
     ]
 }

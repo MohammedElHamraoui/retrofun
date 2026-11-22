@@ -1,7 +1,7 @@
 [project]
 name = "retrofun"
 version = "0.3.0"
-description = "PostgreSQL + Python learning project: SQLAlchemy 2.0 ORM, relationships, Alembic migrations, psycopg 3, pydantic-settings."
+description = "Modern PostgreSQL + Python learning project following SQLAlchemy 2 In Practice, updated for Python 3.13 + uv."
 readme = "README.md"
 authors = [
     { name = "Mohammed El Hamraoui", email = "92893757+MohammedElHamraoui@users.noreply.github.com" },
@@ -13,6 +13,13 @@ dependencies = [
     "psycopg[binary,pool]>=3.3.9",
     "pydantic-settings>=2.16.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/MohammedElHamraoui/retrofun"
+Repository = "https://github.com/MohammedElHamraoui/retrofun.git"
+Documentation = "https://github.com/MohammedElHamraoui/retrofun/tree/main/docs"
+Issues = "https://github.com/MohammedElHamraoui/retrofun/issues"
+Changelog = "https://github.com/MohammedElHamraoui/retrofun/tags"
 
 [project.scripts]
 retrofun = "retrofun.main:main" # ✅ Points to the actual query runner

@@ -1,4 +1,4 @@
-# src/retrofun/import_articles.py
+# src/retrofun/seeders/import_articles.py
 import csv
 
 from sqlalchemy import select

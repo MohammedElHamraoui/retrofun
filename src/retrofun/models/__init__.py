@@ -6,6 +6,7 @@ from .blog_user import BlogUser
 from .blog_view import BlogView
 from .country import Country
 from .customer import Customer
+from .language import Language
 from .manufacturer import Manufacturer
 from .order import Order
 from .order_item import OrderItem
@@ -21,6 +22,7 @@ __all__ = [
     "BlogView",
     "Country",
     "Customer",
+    "Language",
     "Manufacturer",
     "NamedRetroFunBase",
     "Order",

@@ -4,13 +4,93 @@ from sqlalchemy import func, intersect, select
 
 from retrofun.db import SessionLocal
 from retrofun.models import Country, Manufacturer, Product
+from retrofun.models.blog_article import BlogArticle
+from retrofun.models.blog_view import BlogView
 from retrofun.models.customer import Customer
+from retrofun.models.language import Language
 from retrofun.models.order import Order
 from retrofun.models.order_item import OrderItem
 from retrofun.models.product_review import ProductReview
 
 
+def page_analytics_queries() -> None:
+    print("*** Page-Analytics-Queries ***")
+    # ONE single session for all queries
+    with SessionLocal() as session:
+        print("61. Total page views in November 2022.")
+        stmt61 = select(func.count(BlogView.id)).where(
+            BlogView.created_at >= datetime(2022, 11, 1, tzinfo=UTC),
+            BlogView.created_at < datetime(2022, 12, 1, tzinfo=UTC),
+        )
+        print(session.scalar(stmt61))
+        print("")
+
+        print(
+            "62. Ranking of blog articles from most to least viewed, for the month of November 2022"
+        )
+        number_views = func.count(BlogView.id).label("number_views")
+        stmt62 = (
+            select(BlogArticle.title, number_views)
+            .join(BlogArticle.views)
+            .where(
+                BlogView.created_at >= datetime(2022, 11, 1, tzinfo=UTC),
+                BlogView.created_at < datetime(2022, 12, 1, tzinfo=UTC),
+            )
+            .group_by(BlogArticle.id, BlogArticle.title)
+            .order_by(number_views.desc(), BlogArticle.title)
+        )
+        for r_62 in session.execute(stmt62):
+            print(r_62)
+        print("")
+
+        print("63 Number of articles in each language")
+        stmt_63 = (
+            select(Language.name, func.count(BlogArticle.id))
+            .join(Language.blog_articles)
+            .group_by(Language.id)
+        )
+        for r_63 in session.execute(stmt_63):
+            print(r_63)
+        print("")
+
+        # print("71. Blog posts that have received more than 40 page views in March 2020.")
+        stmt_71 = (
+            select(BlogArticle.title)
+            .join(BlogArticle.views)
+            .where(
+                BlogView.created_at >= datetime(2020, 3, 1, tzinfo=UTC),
+                BlogView.created_at < datetime(2020, 4, 1, tzinfo=UTC),
+            )
+            .group_by(BlogArticle.id)
+            .having(
+                func.count(BlogView.id) > 40,
+            )
+        )
+        for r_71 in session.scalars(stmt_71):
+            print(r_71)
+        print("")
+
+        print(
+            "72. Blog article with the largest number of translations. In case of a tie, "
+            "the article that comes first alphabetically should be returned."
+        )
+        print("")
+
+        print("73. Page views in March 2022, categorized by language.")
+        print("")
+
+        print("74. Page views by article, only considering content in German.")
+        print("")
+
+        print("75. Monthly page views between January and December 2022.")
+        print("")
+
+        print("76. Daily page views in February 2022.")
+        print("")
+
+
 def main() -> None:
+    page_analytics_queries()
     print("*** One-To-Many ***")
 
     # ONE single session for all queries

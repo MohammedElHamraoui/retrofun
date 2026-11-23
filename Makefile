@@ -94,6 +94,7 @@ seed:
 	uv run python -m retrofun.seeders.import_reviews
 	uv run python -m retrofun.seeders.import_articles
 	uv run python -m retrofun.seeders.import_views
+	uv run python -m retrofun.seeders.import_languages
 
 demo:
 	uv run python -m retrofun.main

@@ -36,7 +36,7 @@ def main() -> None:
                 if not c:
                     print(
                         f"⚠️ Warning: Row {row_num} - Customer '{customer_name}' "
-                        "not found. Skipping."
+                        f"not found. Skipping."
                     )
                     continue
                 if not p:
@@ -53,7 +53,7 @@ def main() -> None:
                 if (p.id, c.id) in existing_reviews:
                     print(
                         f"⚠️ Warning: Row {row_num} - Duplicate review for '{p.name}' by "
-                        "'{c.name}'. Skipping."
+                        f"'{c.name}'. Skipping."
                     )
                     continue
 

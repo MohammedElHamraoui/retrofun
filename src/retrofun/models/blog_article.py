@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, WriteOnlyMapped, mapped_column, relationship
 from retrofun.models.base import RetroFunBase
 
 if TYPE_CHECKING:
-    from retrofun.models import BlogAuthor, BlogView, Product
+    from retrofun.models import BlogAuthor, BlogView, Language, Product
 
 
 class BlogArticle(RetroFunBase[int]):
@@ -17,6 +17,10 @@ class BlogArticle(RetroFunBase[int]):
     title: Mapped[str] = mapped_column(String(128), index=True)
     author_id: Mapped[int] = mapped_column(ForeignKey("blog_authors.id"), index=True)
     product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"), index=True)
+    language_id: Mapped[int | None] = mapped_column(ForeignKey("languages.id"), index=True)
+    translation_of_id: Mapped[int | None] = mapped_column(
+        ForeignKey("blog_articles.id"), index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -28,3 +32,10 @@ class BlogArticle(RetroFunBase[int]):
     product: Mapped["Product | None"] = relationship(back_populates="blog_articles")
 
     views: WriteOnlyMapped["BlogView"] = relationship(back_populates="article")
+
+    language: Mapped["Language | None"] = relationship(back_populates="blog_articles")
+
+    translation_of: Mapped["BlogArticle|None"] = relationship(
+        remote_side=id, back_populates="translations"
+    )
+    translations: Mapped[list["BlogArticle"]] = relationship(back_populates="translation_of")
